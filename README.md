@@ -2,6 +2,14 @@
 
 面向咖啡爱好者的全栈社区：记录每次咖啡品鉴的详细笔记（风味、评分、冲煮方式），浏览和收藏豆种信息，创建和分享冲煮配方，通过评论与点赞互动，个人主页提供品鉴历史与偏好画像统计。
 
+## 项目主要功能
+
+- 品鉴笔记：发布/编辑/删除、风味标签、四维评分（香气/酸质/醇厚度/总分）、点赞与评论
+- 豆种库：按产地/处理法筛选，管理员维护豆种
+- 冲煮配方：器具/水温筛选、分步配方分享
+- 用户体系：JWT 注册登录、RBAC（user/admin）、关注/取关、个人主页统计
+- **杯测盲评（闭环）**：发起人选择一款咖啡豆 + 恰好三名参与者开评；每人只能提交一次香气、酸质、醇厚度、总分；全部提交前互不可见（含发起人），提交齐后由发起人统一揭晓并计算各维平均分，与该维平均分偏差严格大于 1.5 分的评分标为「离群」；人数不足/重复参与者、重复或并发提交、未齐揭晓、非发起人揭晓、重复揭晓均明确失败且原数据不变。
+
 ## Docker Compose 一键启动（推荐）
 
 ```bash
@@ -15,7 +23,7 @@ docker compose up -d --build
 - 后端 API：http://localhost:29601
 - 健康检查：http://localhost:29601/healthz
 
-默认账号：`admin / admin123`（管理员）、`barista / user123`（咖啡爱好者）。
+默认账号：`admin / admin123`（管理员）、`barista / user123`（咖啡爱好者）、`roaster / user123`（烘焙师）、`cupper / user123`（杯测师，便于直接三人开评）。
 
 关闭并清理：
 
@@ -66,26 +74,27 @@ wje-101/
 │   ├── cmd/server/            # main.go + migrate/seed
 │   └── internal/
 │       ├── config/            # DB/JWT/限流/上传配置
-│       ├── model/             # 7 个实体
-│       ├── repository/        # 按实体分文件
-│       ├── service/           # 按实体分文件
+│       ├── model/             # 7 个实体 + 杯测盲评 3 张表（session/participant/score）
+│       ├── repository/        # 按实体分文件（盲评仓储含事务与行锁）
+│       ├── service/           # 按实体分文件（盲评服务含均值/离群计算）
 │       ├── handler/           # 按实体分文件 + upload
-│       ├── router/            # router.go + 按实体分文件
+│       ├── router/            # router.go + 按实体分文件（含 blind_tastings.go）
 │       ├── middleware/        # auth/rbac/rate_limiter/error_handler/logger/cors
-│       ├── dto/
-│       ├── constants/         # note/bean/user/error_codes/log_templates/messages
+│       ├── dto/               # 含 blind_dto.go（盲评请求/视图/均值）
+│       ├── constants/         # note/bean/user/blind_tasting/error_codes/log_templates/messages
 │       └── util/              # jwt/logger/formatters/file
 └── frontend/
     ├── nginx.conf
     └── src/
-        ├── api/               # user/note/bean/recipe
-        ├── stores/            # useUserStore/useNoteStore/useBeanStore
+        ├── api/               # user/note/bean/recipe/blind
+        ├── stores/            # useUserStore/useNoteStore/useBeanStore/useBlindTastingStore
         ├── components/common/ # ScoreStars/FlavorTags/EmptyState/UserAvatar/ErrorToast/ImageUploader/SearchFilter
+        ├── components/blind/  # BlindCreateDialog/BlindScoreDialog
         ├── hooks/             # useAuth/usePagination
-        ├── pages/             # Home/NoteCreate/NoteDetail/BeanLibrary/Profile/RecipeSquare/Login
+        ├── pages/             # Home/NoteCreate/NoteDetail/BeanLibrary/BlindTasting/Profile/RecipeSquare/Login
         ├── router/            # index.ts（含守卫）
         ├── utils/             # request/storage/dateFormat
-        └── constants/         # note/bean/user/errorCodes
+        └── constants/         # note/bean/user/blind/errorCodes
 ```
 
 ## 环境变量
@@ -136,6 +145,12 @@ wje-101/
 | POST | /api/v1/beans | admin（限流） | 新增咖啡豆 |
 | PUT | /api/v1/beans/:id | admin | 更新咖啡豆 |
 | DELETE | /api/v1/beans/:id | admin | 删除咖啡豆 |
+| GET | /api/v1/blind-tastings | 登录 | 盲评列表（?scope=mine 仅与我相关） |
+| GET | /api/v1/blind-tastings/user-search | 登录 | 按用户名搜索可邀参与者 |
+| POST | /api/v1/blind-tastings | 登录（限流） | 发起盲评（一款豆 + 恰好 3 名不重复参与者，发起人不可参评） |
+| GET | /api/v1/blind-tastings/:id | 登录 | 盲评详情（揭晓前屏蔽他人分数，仅本人可见自己的分数） |
+| POST | /api/v1/blind-tastings/:id/scores | 登录（限流） | 参与者一次性提交四维评分（唯一约束 + 事务行锁防并发重复） |
+| POST | /api/v1/blind-tastings/:id/reveal | 登录（限流） | 发起人统一揭晓（事务行锁防并发；仅全员提交后成功，不可重复） |
 
 ## 枚举出现位置清单
 
@@ -148,6 +163,11 @@ wje-101/
 
 - 后端：`internal/constants/bean.go`（定义）、`internal/model/coffee_bean.go`（模型）、`internal/service/bean_service.go`（校验）、`internal/util/formatters.go`（ProcessText）、`internal/constants/log_templates.go`、`database/init.sql`
 - 前端：`src/constants/bean.ts`（定义）、`src/pages/BeanLibrary.vue`（筛选器+新增表单）
+
+### BlindStatus（ongoing/revealed，杯测盲评状态）
+
+- 后端：`internal/constants/blind_tasting.go`（定义、人数=3、离群阈值=1.5、分值 0-10 校验）、`internal/model/blind_tasting_session.go`（模型）、`internal/service/blind_tasting_service.go`（状态流转/匿名视图/均值离群）、`internal/repository/blind_tasting_repository.go`（事务行锁）、`internal/util/formatters.go`（BlindStatusText）、`internal/constants/log_templates.go`（LogBlind*）、`internal/dto/blind_dto.go`、`database/init.sql`（blind_tasting_sessions/blind_tasting_participants/blind_scores）
+- 前端：`src/constants/blind.ts`（定义、类型与阈值）、`src/api/blind.ts`、`src/stores/useBlindTastingStore.ts`、`src/pages/BlindTasting.vue`（发起/匿名评分/揭晓/刷新回读）、`src/components/blind/BlindCreateDialog.vue`、`src/components/blind/BlindScoreDialog.vue`、`src/router/index.ts`（路由守卫）
 
 ### UserRole（user/admin）
 

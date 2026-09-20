@@ -35,3 +35,31 @@ func (r *UserRepository) FindByID(id uint) (*model.User, error) {
 
 // Update persists a user.
 func (r *UserRepository) Update(u *model.User) error { return translate(r.db.Save(u).Error) }
+
+// FindByIDs locates users by a set of ids. Missing ids are simply omitted.
+func (r *UserRepository) FindByIDs(ids []uint) ([]model.User, error) {
+	var users []model.User
+	if len(ids) == 0 {
+		return users, nil
+	}
+	if err := translate(r.db.Where("id IN ?", ids).Find(&users).Error); err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
+// SearchUsers looks up users by username keyword for the blind cupping participant picker.
+func (r *UserRepository) SearchUsers(keyword string, excludeID uint, limit int) ([]model.User, error) {
+	var users []model.User
+	q := r.db.Model(&model.User{})
+	if keyword != "" {
+		q = q.Where("username LIKE ?", "%"+keyword+"%")
+	}
+	if excludeID > 0 {
+		q = q.Where("id <> ?", excludeID)
+	}
+	if err := q.Order("id ASC").Limit(limit).Find(&users).Error; err != nil {
+		return nil, err
+	}
+	return users, nil
+}

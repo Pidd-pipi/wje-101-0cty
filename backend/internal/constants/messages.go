@@ -17,4 +17,8 @@ const (
 	MsgUnfollowed         = "已取消关注"
 	MsgInvalidCredentials = "用户名或密码错误"
 	MsgUsernameTaken      = "用户名已存在"
+
+	MsgBlindCreated        = "盲评已开评"
+	MsgBlindScoreSubmitted = "盲评评分已提交"
+	MsgBlindRevealed       = "盲评结果已揭晓"
 )

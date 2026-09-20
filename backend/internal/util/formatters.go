@@ -69,3 +69,15 @@ func RoleText(r string) string {
 		return "未知"
 	}
 }
+
+// BlindStatusText maps a blind cupping status to Chinese text.
+func BlindStatusText(s string) string {
+	switch s {
+	case "ongoing":
+		return "开评中"
+	case "revealed":
+		return "已揭晓"
+	default:
+		return "未知"
+	}
+}

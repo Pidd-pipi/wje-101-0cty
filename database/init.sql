@@ -83,11 +83,55 @@ CREATE TABLE IF NOT EXISTS user_follows (
   PRIMARY KEY (follower_id, following_id)
 );
 
+-- 杯测盲评：一场盲评由发起人选择一款豆、三名参与者；每人只能提交一次
+CREATE TABLE IF NOT EXISTS blind_tasting_sessions (
+  id BIGSERIAL PRIMARY KEY,
+  host_id BIGINT NOT NULL,
+  coffee_bean_id BIGINT NOT NULL,
+  coffee_bean_name VARCHAR(128) NOT NULL,
+  status VARCHAR(16) NOT NULL DEFAULT 'ongoing',
+  revealed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT fk_blind_host FOREIGN KEY (host_id) REFERENCES users(id),
+  CONSTRAINT fk_blind_bean FOREIGN KEY (coffee_bean_id) REFERENCES coffee_beans(id)
+);
+CREATE INDEX IF NOT EXISTS idx_blind_sessions_host ON blind_tasting_sessions(host_id);
+CREATE INDEX IF NOT EXISTS idx_blind_sessions_status ON blind_tasting_sessions(status);
+
+CREATE TABLE IF NOT EXISTS blind_tasting_participants (
+  id BIGSERIAL PRIMARY KEY,
+  session_id BIGINT NOT NULL,
+  user_id BIGINT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT fk_blind_participant_session FOREIGN KEY (session_id) REFERENCES blind_tasting_sessions(id),
+  CONSTRAINT fk_blind_participant_user FOREIGN KEY (user_id) REFERENCES users(id),
+  CONSTRAINT uniq_blind_session_user UNIQUE (session_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS blind_scores (
+  id BIGSERIAL PRIMARY KEY,
+  session_id BIGINT NOT NULL,
+  user_id BIGINT NOT NULL,
+  aroma_score DOUBLE PRECISION NOT NULL,
+  acidity_score DOUBLE PRECISION NOT NULL,
+  body_score DOUBLE PRECISION NOT NULL,
+  overall_score DOUBLE PRECISION NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT fk_blind_score_session FOREIGN KEY (session_id) REFERENCES blind_tasting_sessions(id),
+  CONSTRAINT fk_blind_score_user FOREIGN KEY (user_id) REFERENCES users(id),
+  CONSTRAINT chk_blind_aroma CHECK (aroma_score BETWEEN 0 AND 10),
+  CONSTRAINT chk_blind_acidity CHECK (acidity_score BETWEEN 0 AND 10),
+  CONSTRAINT chk_blind_body CHECK (body_score BETWEEN 0 AND 10),
+  CONSTRAINT chk_blind_overall CHECK (overall_score BETWEEN 0 AND 10),
+  CONSTRAINT uniq_blind_score_session_user UNIQUE (session_id, user_id)
+);
+
 -- 种子数据
 INSERT INTO users (username, email, password_hash, bio, role) VALUES
   ('admin', 'admin@coffeetaste.local', '$2a$10$VGETME6mK/u27yF1UwKHkuh0b36LjEpJjw2c4J2L7wPph1pcG0cVO', '咖啡平台管理员', 'admin'),
   ('barista', 'barista@coffeetaste.local', '$2a$10$txSqFgLTRQZHGsde2i9vPuyh0WeH3adS0BTHSc..i8Y8FbtF4/rri', '精品咖啡爱好者', 'user'),
-  ('roaster', 'roaster@coffeetaste.local', '$2a$10$txSqFgLTRQZHGsde2i9vPuyh0WeH3adS0BTHSc..i8Y8FbtF4/rri', '烘焙师', 'user');
+  ('roaster', 'roaster@coffeetaste.local', '$2a$10$txSqFgLTRQZHGsde2i9vPuyh0WeH3adS0BTHSc..i8Y8FbtF4/rri', '烘焙师', 'user'),
+  ('cupper', 'cupper@coffeetaste.local', '$2a$10$txSqFgLTRQZHGsde2i9vPuyh0WeH3adS0BTHSc..i8Y8FbtF4/rri', '杯测师，擅长盲评', 'user');
 
 INSERT INTO coffee_beans (name, origin, process_method, flavor_tags, description) VALUES
   ('埃塞俄比亚耶加雪菲', '埃塞俄比亚', 'washed', '["柑橘","茉莉","蜂蜜"]', '经典水洗耶加雪菲，明亮柑橘酸质。'),

@@ -2,10 +2,11 @@
   <el-container class="shell">
     <el-header class="header">
       <div class="brand" @click="$router.push('/')">☕ 咖啡品鉴社区</div>
-      <el-menu mode="horizontal" :ellipsis="false" router :default-active="$route.path">
+      <el-menu mode="horizontal" :ellipsis="false" router :default-active="activeMenu">
         <el-menu-item index="/">首页</el-menu-item>
         <el-menu-item index="/note/create">写品鉴笔记</el-menu-item>
         <el-menu-item index="/beans">豆种库</el-menu-item>
+        <el-menu-item index="/blind-tastings">杯测盲评</el-menu-item>
         <el-menu-item index="/recipes">配方广场</el-menu-item>
       </el-menu>
       <div class="user-area">
@@ -31,7 +32,8 @@
 </template>
 
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
+import { computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/useUserStore'
 import { useAuth } from '@/hooks/useAuth'
 import UserAvatar from '@/components/common/UserAvatar.vue'
@@ -39,6 +41,14 @@ import UserAvatar from '@/components/common/UserAvatar.vue'
 const store = useUserStore()
 const { isLoggedIn, user } = useAuth()
 const router = useRouter()
+const route = useRoute()
+
+// 详情页（如 /blind-tastings/:id）保持对应一级菜单高亮
+const activeMenu = computed(() => {
+  if (route.path.startsWith('/blind-tastings')) return '/blind-tastings'
+  if (route.path.startsWith('/note')) return '/note/create'
+  return route.path
+})
 
 function onCommand(cmd: string) {
   if (cmd === 'profile') {

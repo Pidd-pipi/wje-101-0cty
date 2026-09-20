@@ -18,6 +18,9 @@ func migrate(db *gorm.DB) error {
 		&model.Comment{},
 		&model.Like{},
 		&model.UserFollow{},
+		&model.BlindTastingSession{},
+		&model.BlindTastingParticipant{},
+		&model.BlindScore{},
 	)
 }
 
@@ -36,6 +39,7 @@ func seed(db *gorm.DB) error {
 	admin := &model.User{Username: "admin", Email: "admin@coffeetaste.local", PasswordHash: string(adminHash), Bio: "咖啡平台管理员", Role: "admin"}
 	user := &model.User{Username: "barista", Email: "barista@coffeetaste.local", PasswordHash: string(userHash), Bio: "精品咖啡爱好者", Role: "user"}
 	user2 := &model.User{Username: "roaster", Email: "roaster@coffeetaste.local", PasswordHash: string(userHash), Bio: "烘焙师", Role: "user"}
+	user3 := &model.User{Username: "cupper", Email: "cupper@coffeetaste.local", PasswordHash: string(userHash), Bio: "杯测师，擅长盲评", Role: "user"}
 	if err := db.Create(admin).Error; err != nil {
 		return err
 	}
@@ -43,6 +47,9 @@ func seed(db *gorm.DB) error {
 		return err
 	}
 	if err := db.Create(user2).Error; err != nil {
+		return err
+	}
+	if err := db.Create(user3).Error; err != nil {
 		return err
 	}
 
@@ -99,6 +106,6 @@ func seed(db *gorm.DB) error {
 	}
 
 	logger.Info("wjecoffeetaste seed data created",
-		"users", 3, "beans", len(beans), "recipes", len(recipes), "notes", len(notes), "comments", len(comments))
+		"users", 4, "beans", len(beans), "recipes", len(recipes), "notes", len(notes), "comments", len(comments))
 	return nil
 }
