@@ -18,6 +18,9 @@ func migrate(db *gorm.DB) error {
 		&model.Comment{},
 		&model.Like{},
 		&model.UserFollow{},
+		&model.BlindCupping{},
+		&model.CuppingParticipant{},
+		&model.BlindScore{},
 	)
 }
 

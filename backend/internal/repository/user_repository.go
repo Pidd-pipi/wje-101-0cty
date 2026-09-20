@@ -35,3 +35,40 @@ func (r *UserRepository) FindByID(id uint) (*model.User, error) {
 
 // Update persists a user.
 func (r *UserRepository) Update(u *model.User) error { return translate(r.db.Save(u).Error) }
+
+// ExistsByID reports whether a user exists.
+func (r *UserRepository) ExistsByID(id uint) (bool, error) {
+	var total int64
+	if err := r.db.Model(&model.User{}).Where("id = ?", id).Count(&total).Error; err != nil {
+		return false, err
+	}
+	return total > 0, nil
+}
+
+// FindByIDs returns users matching the given ids.
+func (r *UserRepository) FindByIDs(ids []uint) ([]model.User, error) {
+	var users []model.User
+	if len(ids) == 0 {
+		return users, nil
+	}
+	if err := translate(r.db.Where("id IN ?", ids).Order("id ASC").Find(&users).Error); err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
+// Search returns users whose username contains keyword, limited to limit rows.
+func (r *UserRepository) Search(keyword string, limit int) ([]model.User, error) {
+	var users []model.User
+	q := r.db.Model(&model.User{})
+	if keyword != "" {
+		q = q.Where("username LIKE ?", "%"+keyword+"%")
+	}
+	if limit <= 0 || limit > 50 {
+		limit = 20
+	}
+	if err := translate(q.Order("id ASC").Limit(limit).Find(&users).Error); err != nil {
+		return nil, err
+	}
+	return users, nil
+}

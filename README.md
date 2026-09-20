@@ -66,7 +66,7 @@ wje-101/
 │   ├── cmd/server/            # main.go + migrate/seed
 │   └── internal/
 │       ├── config/            # DB/JWT/限流/上传配置
-│       ├── model/             # 7 个实体
+│       ├── model/             # 9 个实体（含 BlindCupping/CuppingParticipant/BlindScore）
 │       ├── repository/        # 按实体分文件
 │       ├── service/           # 按实体分文件
 │       ├── handler/           # 按实体分文件 + upload
@@ -136,6 +136,21 @@ wje-101/
 | POST | /api/v1/beans | admin（限流） | 新增咖啡豆 |
 | PUT | /api/v1/beans/:id | admin | 更新咖啡豆 |
 | DELETE | /api/v1/beans/:id | admin | 删除咖啡豆 |
+| GET | /api/v1/users/search | 登录 | 搜索用户（盲评选择参与者） |
+| GET | /api/v1/cuppings | 登录 | 我发起/参与的盲评场次 |
+| POST | /api/v1/cuppings | 登录（限流） | 发起盲评（选 1 款豆 + 3 名参与者） |
+| GET | /api/v1/cuppings/:id | 登录 | 盲评详情（揭晓前隐藏评分） |
+| POST | /api/v1/cuppings/:id/submit | 登录（限流） | 参与者一次性提交四维评分 |
+| POST | /api/v1/cuppings/:id/reveal | 登录（限流） | 发起人统一揭晓并计算平均分/离群 |
+
+### 杯测盲评闭环规则
+
+- 发起人选择一款咖啡豆与**三名不同的**参与者；人数不足或重复直接 422 失败，不落库。
+- 开评后状态为 `collecting`：每人只能提交一次香气（aroma）、酸质（acidity）、醇厚度（body）、总分（overall，0–10 分）；全部提交前任何接口都不返回他人评分。
+- 重复提交、非参与者提交、揭晓后提交均 409/403 失败，**原数据不变**；提交在数据库事务内对场次行加 `SELECT ... FOR UPDATE` 行锁，并由 `(cupping_id,user_id)` 唯一索引兜底并发重复提交。
+- 提交未齐时揭晓 409 失败；非发起人揭晓 403 失败；重复揭晓 409 失败，均不改动数据。
+- 揭晓（`revealed`）时计算各维平均分（保留 1 位小数）；任一评分在某维度与该维平均分之差的绝对值 **严格大于 1.5** 标记为该维离群（`outlier_*=true`）。
+- 页面 `/cupping` 可发起、`/cupping/:id` 可匿名评分、发起人揭晓并刷新回读；品鉴笔记与豆种库等既有流程保持不变。
 
 ## 枚举出现位置清单
 

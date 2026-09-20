@@ -9,6 +9,8 @@ const routes: RouteRecordRaw[] = [
   { path: '/beans', name: 'beans', component: () => import('@/pages/BeanLibrary.vue'), meta: { title: '豆种库' } },
   { path: '/profile/:id', name: 'profile', component: () => import('@/pages/Profile.vue'), meta: { title: '个人主页' } },
   { path: '/recipes', name: 'recipes', component: () => import('@/pages/RecipeSquare.vue'), meta: { title: '配方广场' } },
+  { path: '/cupping', name: 'cupping', component: () => import('@/pages/CuppingList.vue'), meta: { title: '杯测盲评', requiresAuth: true } },
+  { path: '/cupping/:id', name: 'cuppingDetail', component: () => import('@/pages/CuppingDetail.vue'), meta: { title: '盲评详情', requiresAuth: true } },
   { path: '/login', name: 'login', component: () => import('@/pages/Login.vue'), meta: { title: '登录' } },
 ]
 

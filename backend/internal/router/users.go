@@ -12,6 +12,7 @@ func registerUserRoutes(v1 *gin.RouterGroup, cfg *config.Config, h *handler.User
 	users := v1.Group("/users")
 	users.POST("/register", limiter.Limit(), h.Register)
 	users.POST("/login", limiter.Limit(), h.Login)
+	users.GET("/search", middleware.AuthRequired(cfg), h.Search)
 	users.GET("/:id/profile", h.Profile)
 	users.POST("/:id/follow", middleware.AuthRequired(cfg), limiter.Limit(), fh.Follow)
 	users.DELETE("/:id/follow", middleware.AuthRequired(cfg), fh.Unfollow)

@@ -7,6 +7,7 @@
         <el-menu-item index="/note/create">写品鉴笔记</el-menu-item>
         <el-menu-item index="/beans">豆种库</el-menu-item>
         <el-menu-item index="/recipes">配方广场</el-menu-item>
+        <el-menu-item index="/cupping">杯测盲评</el-menu-item>
       </el-menu>
       <div class="user-area">
         <template v-if="isLoggedIn">

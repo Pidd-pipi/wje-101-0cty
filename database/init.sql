@@ -83,6 +83,45 @@ CREATE TABLE IF NOT EXISTS user_follows (
   PRIMARY KEY (follower_id, following_id)
 );
 
+CREATE TABLE IF NOT EXISTS blind_cuppings (
+  id BIGSERIAL PRIMARY KEY,
+  organizer_id BIGINT NOT NULL,
+  coffee_bean_id BIGINT NOT NULL,
+  status VARCHAR(16) NOT NULL DEFAULT 'collecting',
+  avg_aroma DOUBLE PRECISION DEFAULT 0,
+  avg_acidity DOUBLE PRECISION DEFAULT 0,
+  avg_body DOUBLE PRECISION DEFAULT 0,
+  avg_overall DOUBLE PRECISION DEFAULT 0,
+  revealed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT fk_cupping_organizer FOREIGN KEY (organizer_id) REFERENCES users(id),
+  CONSTRAINT fk_cupping_bean FOREIGN KEY (coffee_bean_id) REFERENCES coffee_beans(id)
+);
+
+CREATE TABLE IF NOT EXISTS cupping_participants (
+  id BIGSERIAL PRIMARY KEY,
+  cupping_id BIGINT NOT NULL,
+  user_id BIGINT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT idx_cupping_participant UNIQUE (cupping_id, user_id),
+  CONSTRAINT fk_cp_cupping FOREIGN KEY (cupping_id) REFERENCES blind_cuppings(id),
+  CONSTRAINT fk_cp_user FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS blind_scores (
+  id BIGSERIAL PRIMARY KEY,
+  cupping_id BIGINT NOT NULL,
+  user_id BIGINT NOT NULL,
+  aroma_score DOUBLE PRECISION NOT NULL,
+  acidity_score DOUBLE PRECISION NOT NULL,
+  body_score DOUBLE PRECISION NOT NULL,
+  overall_score DOUBLE PRECISION NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT idx_blindscore_cupping_user UNIQUE (cupping_id, user_id),
+  CONSTRAINT fk_bs_cupping FOREIGN KEY (cupping_id) REFERENCES blind_cuppings(id),
+  CONSTRAINT fk_bs_user FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
 -- 种子数据
 INSERT INTO users (username, email, password_hash, bio, role) VALUES
   ('admin', 'admin@coffeetaste.local', '$2a$10$VGETME6mK/u27yF1UwKHkuh0b36LjEpJjw2c4J2L7wPph1pcG0cVO', '咖啡平台管理员', 'admin'),

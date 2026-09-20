@@ -99,3 +99,13 @@ func (s *UserService) GetByID(id uint) (*model.User, error) {
 	}
 	return u, nil
 }
+
+// SearchUsers returns users whose username contains keyword, used when
+// selecting blind cupping participants.
+func (s *UserService) SearchUsers(keyword string) ([]model.User, error) {
+	users, err := s.repo.Search(keyword, 20)
+	if err != nil {
+		return nil, fmt.Errorf("user search: %w", err)
+	}
+	return users, nil
+}

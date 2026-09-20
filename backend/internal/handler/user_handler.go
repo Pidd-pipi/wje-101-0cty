@@ -83,6 +83,17 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 	c.JSON(http.StatusOK, dto.OK(u))
 }
 
+// Search handles GET /users/search?keyword= for choosing cupping participants.
+func (h *UserHandler) Search(c *gin.Context) {
+	keyword := c.Query("keyword")
+	users, err := h.svc.SearchUsers(keyword)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+	c.JSON(http.StatusOK, dto.OK(users))
+}
+
 // Profile handles GET /users/:id/profile (public stats).
 func (h *UserHandler) Profile(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)

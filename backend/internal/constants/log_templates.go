@@ -30,4 +30,11 @@ const (
 	LogUploadFailed           = "file upload failed: filename=%s"
 	LogRateLimited            = "request rate limited: path=%s ip=%s"
 	LogRequestHandled         = "request handled: request_id=%s method=%s path=%s status=%d latency_ms=%d"
+	LogCuppingCreateSuccess   = "blind cupping created: id=%d bean_id=%d organizer=%d"
+	LogCuppingCreateFailed    = "blind cupping create failed: bean_id=%d organizer=%d"
+	LogCuppingSubmitSuccess   = "blind cupping score submitted: cupping_id=%d user_id=%d"
+	LogCuppingSubmitFailed    = "blind cupping score submit failed: cupping_id=%d user_id=%d"
+	LogCuppingRevealSuccess   = "blind cupping revealed: cupping_id=%d organizer=%d"
+	LogCuppingRevealFailed    = "blind cupping reveal failed: cupping_id=%d organizer=%d"
+	LogCuppingListSuccess     = "blind cupping list success: user_id=%d total=%d"
 )
